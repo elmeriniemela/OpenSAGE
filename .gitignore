@@ -299,3 +299,7 @@ imgui.ini
 
 ShaderCache
 DeveloperMode.ini
+
+# Local verification reports, caches and installation paths
+.artifacts/
+scripts/verification.local.json

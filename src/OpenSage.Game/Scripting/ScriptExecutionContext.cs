@@ -2,6 +2,8 @@
 
 public sealed class ScriptExecutionContext
 {
+    internal string ScriptName { get; set; }
+    internal string GroupPath { get; set; }
     public readonly IGame Game;
 
     public ScriptingSystem Scripting => Game.Scripting;

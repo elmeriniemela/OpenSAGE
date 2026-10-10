@@ -9,7 +9,7 @@ namespace OpenSage.Scripting;
 internal sealed class CameraFadeOverlay : DisposableBase, IPersistableObject
 {
     private readonly IGame _game;
-    private readonly DrawingContext2D _drawingContext;
+    private DrawingContext2D _drawingContext;
 
     public CameraFadeType FadeType;
 
@@ -26,12 +26,6 @@ internal sealed class CameraFadeOverlay : DisposableBase, IPersistableObject
     public CameraFadeOverlay(IGame game)
     {
         _game = game;
-
-        _drawingContext = AddDisposable(new DrawingContext2D(
-            game.ContentManager,
-            game.GraphicsLoadContext,
-            BlendStateDescription.SingleAdditiveBlend,
-            RenderPipeline.GameOutputDescription));
     }
 
     public void Persist(StatePersister reader)
@@ -86,6 +80,14 @@ internal sealed class CameraFadeOverlay : DisposableBase, IPersistableObject
         }
 
         commandList.PushDebugGroup("Camera fade");
+
+        // Simulation and save restoration need fade state without a graphics device.
+        // Allocate presentation resources only when the overlay is actually rendered.
+        _drawingContext ??= AddDisposable(new DrawingContext2D(
+            _game.ContentManager,
+            _game.GraphicsLoadContext,
+            BlendStateDescription.SingleAdditiveBlend,
+            RenderPipeline.GameOutputDescription));
 
         _drawingContext.Begin(
             commandList,

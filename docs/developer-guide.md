@@ -4,6 +4,12 @@
 
 Opensage uses the standard .NET Core tooling. Install the tools and build normally (dotnet build).
 
+For the local edit/test loop, run `./scripts/verify.sh quick` from the repository
+root. It handles cached restore, incremental build, tests and structured reports.
+Use `full --configuration Release` for the solution-wide check or `assets` for the
+explicit content inventory. See [Development workflow](development-workflow.md)
+for configuration, Windows commands and failure reproduction.
+
 ### Windows
 
 On Windows you can just open the provided solution file `src/OpenSage.sln` to get started.

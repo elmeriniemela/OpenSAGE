@@ -26,9 +26,22 @@ public sealed class ScriptGroup : Asset, IPersistableObject
             return;
         }
 
-        foreach (var script in Scripts)
+        var previousGroupPath = context.GroupPath;
+        context.GroupPath = previousGroupPath == null ? Name : $"{previousGroupPath}/{Name}";
+        try
         {
-            script.Execute(context);
+            foreach (var group in Groups)
+            {
+                group.Execute(context);
+            }
+            foreach (var script in Scripts)
+            {
+                script.Execute(context);
+            }
+        }
+        finally
+        {
+            context.GroupPath = previousGroupPath;
         }
     }
 

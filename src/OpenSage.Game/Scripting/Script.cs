@@ -64,17 +64,19 @@ public sealed class Script : Asset, IPersistableObject
 
     public void Execute(ScriptExecutionContext context)
     {
+        if (_framesUntilNextEvaluation > 0)
+        {
+            _framesUntilNextEvaluation--;
+        }
+
         var shouldExecute =
             !IsSubroutine &&
             IsActive &&
             (EvaluationInterval == 0 || _framesUntilNextEvaluation == 0);
 
-        if (EvaluationInterval != 0)
+        if (shouldExecute && EvaluationInterval != 0)
         {
-            // TODO: Is there an off-by-one error here?
-            _framesUntilNextEvaluation = _framesUntilNextEvaluation == 0
-                ? EvaluationInterval * context.Scripting.TickRate
-                : _framesUntilNextEvaluation--;
+            _framesUntilNextEvaluation = EvaluationInterval * context.Scripting.TickRate;
         }
 
         if (!shouldExecute)
@@ -99,6 +101,20 @@ public sealed class Script : Asset, IPersistableObject
 
     private void RunActions(ScriptExecutionContext context)
     {
+        var previousScriptName = context.ScriptName;
+        context.ScriptName = context.GroupPath == null ? Name : $"{context.GroupPath}/{Name}";
+        try
+        {
+            RunActionsCore(context);
+        }
+        finally
+        {
+            context.ScriptName = previousScriptName;
+        }
+    }
+
+    private void RunActionsCore(ScriptExecutionContext context)
+    {
         var conditionValue = EvaluateConditions(context);
 
         var actions = conditionValue
@@ -110,7 +126,7 @@ public sealed class Script : Asset, IPersistableObject
             ScriptActions.Execute(context, action);
         }
 
-        var shouldDeactivate = DeactivateUponSuccess && actions.Length > 0;
+        var shouldDeactivate = DeactivateUponSuccess && conditionValue;
 
         if (shouldDeactivate)
         {

@@ -14,7 +14,7 @@ public abstract class ScriptContent<TDerived, TContentType> : Asset
 
     public ScriptArgument[] Arguments { get; set; }
 
-    public bool Enabled { get; protected set; }
+    public bool Enabled { get; protected set; } = true;
 
     protected ScriptContent()
     {

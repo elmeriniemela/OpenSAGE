@@ -16,6 +16,7 @@ using OpenSage.Logic;
 using OpenSage.Network;
 using OpenSage.Scripting;
 using OpenSage.Terrain;
+using OpenSage.Tests.Diagnostics;
 using Veldrid;
 
 namespace OpenSage.Tests;
@@ -27,10 +28,12 @@ public abstract class MockedGameTest : IDisposable
 
     public void Dispose()
     {
+        Generals.Dispose();
+        ZeroHour.Dispose();
         GC.SuppressFinalize(this);
     }
 
-    private protected class TestGame : IGame
+    private protected class TestGame : IGame, IDisposable
     {
         public IGameDefinition Definition { get; }
         public SageGame SageGame { get; }
@@ -72,7 +75,7 @@ public abstract class MockedGameTest : IDisposable
         public bool InGame { get; }
         public float LogicUpdateScaleFactor { get; set; }
         public bool IsLogicRunning { get; set; }
-        public TimeInterval MapTime { get; }
+        public TimeInterval MapTime { get; set; }
         public TimeInterval CurrentGameTime { get; }
         public TimeInterval RenderTime { get; }
         public TimeSpan CumulativeLogicUpdateError { get; }
@@ -114,11 +117,11 @@ public abstract class MockedGameTest : IDisposable
             throw new NotImplementedException();
         }
 
-        public TestGame(SageGame game)
+        public TestGame(SageGame game, bool initializeSimulation = false)
         {
             SageGame = game;
+            Definition = OpenSage.Mods.BuiltIn.GameDefinition.FromGame(game);
             AssetStore = new AssetStore(game, null, null, null, null, null, null, OnDemandAssetLoadStrategy.None);
-            GameEngine = new GameEngine(AssetStore.LoadContext, null, null, null, null, null, null, null, Scene3D, this);
 
             AssetStore.PushScope();
 
@@ -130,7 +133,20 @@ public abstract class MockedGameTest : IDisposable
             TerrainLogic = new TerrainLogic();
             TerrainLogic.SetHeightMapData(OpenSage.Data.Map.HeightMapData.Create(0, new ushort[2, 2] { { 0, 0 }, { 0, 0 } }));
 
+            if (initializeSimulation)
+            {
+                Scene3D = new SimulationTestScene(this);
+                GameClient = new GameClient(this);
+                Selection = new SelectionSystem(this);
+                typeof(GameData).GetProperty(nameof(GameData.PartitionCellSize)).SetValue(AssetStore.GameData.Current, 10f);
+                PartitionCellManager = new PartitionCellManager(this);
+                PartitionCellManager.OnNewGame();
+                NetworkMessageBuffer = new NetworkMessageBuffer(this, new EchoConnection());
+            }
+            GameEngine = new GameEngine(AssetStore.LoadContext, null, null, null, null, null,
+                Scene3D?.Radar, Scene3D?.Quadtree, Scene3D, this);
             GameLogic = new GameLogic(this);
+            Scripting = new ScriptingSystem(this);
         }
 
         public void StartCampaign(string campaignName, string missionName)
@@ -176,7 +192,11 @@ public abstract class MockedGameTest : IDisposable
 
         public void Dispose()
         {
-            throw new NotImplementedException();
+            GameLogic.Dispose();
+            GameClient?.Dispose();
+            Scripting.Dispose();
+            Selection?.Dispose();
+            NetworkMessageBuffer?.Dispose();
         }
 
         public Vector2 GetTopLeftUV()

@@ -3,16 +3,9 @@ using Xunit;
 
 namespace OpenSage.Tests.Scripting;
 
-public class ScriptConditionsTests : IClassFixture<GameFixture>
+public class ScriptConditionsTests : MockedGameTest
 {
-    private readonly GameFixture _fixture;
-
-    public ScriptConditionsTests(GameFixture fixture)
-    {
-        _fixture = fixture;
-    }
-
-    [Theory(Skip = "Only works locally")]
+    [Theory]
     [InlineData(ScriptingComparison.EqualTo, 5, true)]
     [InlineData(ScriptingComparison.EqualTo, 4, false)]
     [InlineData(ScriptingComparison.NotEqual, 5, false)]
@@ -31,7 +24,7 @@ public class ScriptConditionsTests : IClassFixture<GameFixture>
     [InlineData(ScriptingComparison.GreaterThan, 6, false)]
     public void TestCounter(ScriptingComparison comparison, int compareValue, bool expectedResult)
     {
-        var game = _fixture.GetGame(SageGame.CncGenerals);
+        var game = Generals;
 
         game.Scripting.SetCounterValue("MyCounter", 5);
 

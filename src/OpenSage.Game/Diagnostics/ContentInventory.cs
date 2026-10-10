@@ -294,7 +294,7 @@ public static class ContentInventory
         return type;
     }
 
-    private static Dictionary<ScriptActionType, MethodInfo> GetActionHandlers(SageGame game) => typeof(ScriptActions)
+    internal static Dictionary<ScriptActionType, MethodInfo> GetActionHandlers(SageGame game) => typeof(ScriptActions)
         .GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
         .Where(x => x.GetCustomAttribute<ScriptActionAttribute>() != null)
         .Where(x => x.GetCustomAttribute<ScriptActionAttribute>().Games.Length == 0 ||
@@ -303,7 +303,7 @@ public static class ContentInventory
         .ToDictionary(x => x.Key, x => x.OrderByDescending(method =>
             method.GetCustomAttribute<ScriptActionAttribute>().Games.Length > 0).First());
 
-    private static Dictionary<ScriptConditionType, MethodInfo> GetConditionHandlers(SageGame game) => typeof(ScriptConditions)
+    internal static Dictionary<ScriptConditionType, MethodInfo> GetConditionHandlers(SageGame game) => typeof(ScriptConditions)
         .GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
         .Where(x => x.GetCustomAttribute<ScriptConditionAttribute>() != null)
         .Where(x => x.GetCustomAttribute<ScriptConditionAttribute>().Games.Length == 0 ||

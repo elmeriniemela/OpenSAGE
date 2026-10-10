@@ -350,14 +350,7 @@ public sealed class Scene3D : DisposableBase, IScene3D
 
     public void LogicTick(in TimeInterval time)
     {
-        Game.PlayerManager.LogicTick();
-
-        foreach (var gameObject in GameObjects.Objects)
-        {
-            gameObject.LogicTick(time);
-        }
-
-        GameObjects.DeleteDestroyed();
+        SimulationTick.UpdateScene(Game, time);
     }
 
     public void LocalLogicTick(in TimeInterval gameTime, float tickT)

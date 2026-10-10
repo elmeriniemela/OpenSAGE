@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using ImGuiNET;
 using OpenSage.Content;
+using OpenSage.Diagnostics;
 using OpenSage.Logic.Map;
 using OpenSage.Logic.Object;
 using OpenSage.Mathematics;
@@ -249,15 +250,27 @@ internal sealed class GameLogic : DisposableBase, IGameObjectCollection, IPersis
             {
                 _currentUpdateModule = updateModule;
 
-                sleepLength = updateModule.Update();
+                try
+                {
+                    sleepLength = updateModule.Update();
+                }
+                catch (Exception exception) when (exception is not SimulationFeatureException)
+                {
+                    var gameObject = updateModule.ParentGameObject;
+                    throw new SimulationFeatureException(null,
+                        $"{gameObject.Definition.Name}/{gameObject.Name}/{gameObject.Id.Index}",
+                        updateModule.GetType().Name, exception);
+                }
+                finally
+                {
+                    _currentUpdateModule = null;
+                }
 
                 DebugUtility.AssertCrash(sleepLength.FrameSpan > LogicFrameSpan.Zero, "You may not return 0 from an update");
                 if (sleepLength.FrameSpan < LogicFrameSpan.One)
                 {
                     sleepLength = UpdateSleepTime.None;
                 }
-
-                _currentUpdateModule = null;
             }
 
             // Defer it till the next frame and re-push it.

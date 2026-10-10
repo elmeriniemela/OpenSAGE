@@ -14,6 +14,13 @@ public sealed class NetworkMessageBuffer : DisposableBase
     private List<Order> _localOrders;
     private uint _netFrameNumber;
 
+    internal Order CurrentOrder => _orderProcessor.CurrentOrder;
+    internal bool StrictValidation
+    {
+        get => _orderProcessor.StrictValidation;
+        set => _orderProcessor.StrictValidation = value;
+    }
+
     //TODO: use this for generating a replay file later on
     public Dictionary<uint, List<Order>> FrameOrders { get; }
 
@@ -32,6 +39,7 @@ public sealed class NetworkMessageBuffer : DisposableBase
 
     internal void Tick()
     {
+        _orderProcessor.CurrentOrder = null;
         _connection.Send(_netFrameNumber, _localOrders);
 
         // create a new list instead of clearing, otherwise

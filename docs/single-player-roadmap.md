@@ -6,10 +6,10 @@ no PR has been opened and no original-game gameplay comparison has been recorded
 
 | Milestone | Status | Remaining completion evidence |
 | --- | --- | --- |
-| 1. Content inventory and test harness | In progress: resolved asset index, official campaign routes, enabled Challenge personas, official skirmish maps, playable factions, map objects, script usage, movie resolution | GUI and cinematic dependency traversal, object modules and orders, transitive dependencies, audio resolution, bounded headless gameplay scenarios |
+| 1. Content inventory and test harness | In progress: content index, official routes, script/media inventory, bounded CPU scenario core | GUI and cinematic dependency traversal, object modules and orders, transitive dependencies, audio resolution, official-map headless initialization and gameplay scenarios |
 | 2. Session lifecycle and basic play | Pending | Lifecycle cleanup, controls, persistent settings, crash regressions, 20 transitions |
 | 3. Shared gameplay simulation | Pending | Stock mechanics, faction features, behavior scenarios and snapshot support |
-| 4. Mission scripting and campaigns | Pending | Script semantics, training and USA mission slice, all campaigns and difficulties |
+| 4. Mission scripting and campaigns | In progress: interval/one-shot evaluation, enabled/inverted flags, nested groups | Remaining script semantics, training and USA mission slice, all campaigns and difficulties |
 | 5. Skirmish AI and Challenge | Pending | Definition-driven AI, skirmish setup/results, every selectable Challenge route |
 | 6. Saves, profiles and presentation | Pending | Versioned snapshots/profiles, save/reload comparisons, video/audio and GUI flows |
 
@@ -46,7 +46,7 @@ statuses do not establish script reachability at runtime or implementation
 correctness. Constant-returning conditions, partial implementations and throwing
 handlers remain unverified. Object types are inventoried but their modules and
 behavior are not certified. Ignored polygon geometry can still produce parser
-warnings. No simulation scenario runner exists yet.
+warnings. This initial inventory does not run simulation.
 
 Referenced campaign/script movies resolve through video definitions and the
 composite filesystem. Missing definitions/files produce structured failures.
@@ -113,5 +113,95 @@ inventory observations, not gameplay acceptance evidence. Full transitive conten
 coverage, headless simulation, Windows behavior comparisons, all-difficulty
 playthroughs, save/reload state hashes and long stability runs remain outstanding.
 
-Next: extend dependency traversal and implement a bounded scenario runner using
-the same simulation code as gameplay, before declaring milestone 1 complete.
+Next: extend dependency traversal and official-map headless initialization so
+bounded scenarios exercise required content before declaring milestone 1 complete.
+
+## Development tooling
+
+[The verification runner](../scripts/verify.py) provides quick, solution-wide and
+asset modes, cached dependency restore, serialized builds, bounded command times,
+TRX failure extraction and versioned JSON reports. [Content queries](../scripts/content_report.py)
+inspect an existing manifest without rescanning the installation. The ignored
+local configuration stores installation paths. [Repository instructions](../AGENTS.md)
+and [the workflow guide](development-workflow.md) describe the edit/test loop;
+[the reference template](behavior-references/README.md) records original-game evidence.
+
+[Tooling regressions](../scripts/tests/test_verification.py) cover failed builds,
+missing assets, stale restores, zero-test filters, skipped-test reporting, command
+timeouts, overlapping runs and bounded content queries. Local Release validation
+passes 703 .NET tests with three existing skips; the tooling suite passes 17 tests.
+The separate tooling CI workflow targets Windows, Linux and macOS; only Linux has
+been validated locally. These tools support milestone 1; asset-backed headless
+gameplay scenarios and full-content acceptance gates remain outstanding.
+
+## Device-independent scripting groundwork
+
+Camera fade state no longer allocates a drawing context during scripting-system
+construction. Presentation resources are created on the first rendered fade;
+script counters and conditions can now run against the production scripting
+system in the CPU-only game fixture, without platform startup or installed assets.
+
+[Script execution tests](../src/OpenSage.Game.Tests/Scripting/ScriptExecutionTests.cs)
+cover repeated interval evaluations at each intervening tick for both games,
+every-frame evaluation, false-branch retries, successful one-shot deactivation
+(including empty action lists), inactive scripts and explicit subroutine calls.
+The countdown previously assigned a post-decrement back to itself and never
+reached zero after its first evaluation. Evaluation now repeats at the configured
+interval in scripting ticks. DeactivateUponSuccess now follows the condition's
+success rather than whether the selected branch contains actions.
+
+[Counter comparison tests](../src/OpenSage.Game.Tests/Scripting/ScriptConditionsTests.cs)
+now execute all 16 cases using that device-independent fixture instead of a skipped
+installation-dependent fixture. Local Linux Release validation on 2026-10-10:
+26 focused scripting checks pass; full solution verification passes 729 .NET tests
+with two asset-dependent save tests skipped. The 17 tooling regressions also pass.
+Reproduce with:
+
+```sh
+./scripts/verify.sh quick --configuration Release --filter 'FullyQualifiedName~Scripting.Script'
+./scripts/verify.sh full --configuration Release
+```
+
+This is groundwork for the milestone 1 runner, not a complete headless session.
+Official-map initialization remains outstanding. No gameplay comparison or
+full-content acceptance is claimed by these synthetic regressions.
+
+## Bounded CPU scenario core
+
+[The scenario runner](../src/OpenSage.Game/Diagnostics/SimulationScenarioRunner.cs)
+uses [the same tick pipeline as windowed gameplay](../src/OpenSage.Game/Logic/SimulationTick.cs):
+scheduler, network/player orders, scene/object logic and partition updates, followed
+by scripting. It initializes simulation/client RNGs before scenario setup, advances
+an integer simulation clock without sleeping and enforces an explicit tick bound.
+Scheduled orders preserve insertion order within a tick; assertions run afterward.
+Every run requires a fresh host, even if setup fails before its first logic tick.
+Zero assertions and out-of-bound schedules are rejected rather than silently passed.
+
+Strict scenario validation fails on missing/empty script actions, missing conditions
+and orders reaching the unimplemented default dispatch branch. It restores the
+host's validation settings after success, cancellation or failure. Scheduler,
+order and script exceptions retain feature/object/script context. Failed assertions
+can supply explicit map, script, object and feature origins. Versioned JSON reports
+can be written atomically with `SimulationScenarioReport.WriteTo`.
+
+[Public scenario regressions](../src/OpenSage.Game.Tests/Diagnostics/SimulationScenarioRunnerTests.cs)
+exercise both games with real selection/control-group orders, object logic, script
+counters, reproducible seeded traces, failure origins, cancellation and JSON output.
+They also expose and fix ignored script enabled/inverted flags and skipped nested
+groups. Disabled conditions contribute no restriction to their AND clause, disabled
+actions do not dispatch, and nested groups execute before their parent's scripts.
+
+The current host is a synthetic test scene with no drawing/audio device. Unsupported
+scene operations throw; official terrain/navigation, graphics-independent stock
+drawables, media interfaces and complete asset-backed session creation are pending.
+Partial handlers and explicit empty order cases still need behavior coverage.
+Passing these scenarios does not prove official mission playability or original-game
+equivalence. See [scenario integration and limitations](headless-scenarios.md).
+
+Local Linux verification on 2026-10-10: all 23 scenario checks pass in Debug;
+full Release solution verification passes 752 .NET tests with two asset-dependent
+save tests skipped. The 17 Python tooling regressions pass in both runs. No asset
+rescan was needed: this increment changes runtime execution, not asset resolution.
+Reproduce with the focused scenario command in the linked guide and
+`./scripts/verify.sh full --configuration Release`. Windows behavior comparison,
+official-map headless runs and milestone completion remain unverified.

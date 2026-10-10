@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
 using System.Text;
+using OpenSage.Diagnostics;
 using OpenSage.Logic;
 using OpenSage.Logic.Object;
 
@@ -41,8 +43,40 @@ public sealed class ScriptingSystem : GameSystem, IPersistableObject
     private readonly List<MapReveal> _mapReveals = new();
     private readonly List<ObjectTypeList> _objectTypeLists = new();
     private string _musicTrackName;
+    private Dictionary<ScriptActionType, string> _actionSupport;
+    private Dictionary<ScriptConditionType, string> _conditionSupport;
 
     public bool Active { get; set; }
+
+    internal bool StrictValidation { get; set; }
+
+    internal void ValidateAction(ScriptActionType type)
+    {
+        if (!StrictValidation)
+        {
+            return;
+        }
+        _actionSupport ??= ContentInventory.GetActionHandlers(Game.SageGame)
+            .ToDictionary(x => x.Key, x => ContentInventory.ClassifyHandler(x.Value));
+        if (!_actionSupport.TryGetValue(type, out var status) || status == "EmptyHandler")
+        {
+            throw new NotSupportedException($"Script action {type}: {status ?? "MissingHandler"}.");
+        }
+    }
+
+    internal void ValidateCondition(ScriptConditionType type)
+    {
+        if (!StrictValidation)
+        {
+            return;
+        }
+        _conditionSupport ??= ContentInventory.GetConditionHandlers(Game.SageGame)
+            .ToDictionary(x => x.Key, x => ContentInventory.ClassifyHandler(x.Value));
+        if (!_conditionSupport.ContainsKey(type))
+        {
+            throw new NotSupportedException($"Script condition {type}: MissingHandler.");
+        }
+    }
 
     public ref readonly BreezeInfo BreezeInfo => ref _breezeInfo;
 

@@ -24,6 +24,10 @@ internal static class GraphicsDeviceUtility
         };
 
         var backend = preferredBackend ?? VeldridStartup.GetPlatformDefaultBackend();
+        if (backend == GraphicsBackend.Vulkan)
+        {
+            VulkanLibraryResolver.Initialize();
+        }
 
         if (window != null)
         {

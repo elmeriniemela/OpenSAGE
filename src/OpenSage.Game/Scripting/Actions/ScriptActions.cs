@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using OpenSage.Data.Ini;
+using OpenSage.Diagnostics;
 
 namespace OpenSage.Scripting;
 
@@ -18,6 +19,10 @@ internal static partial class ScriptActions
 
     public static void Execute(ScriptExecutionContext context, ScriptAction action)
     {
+        if (!action.Enabled)
+        {
+            return;
+        }
         var actionType = action.ContentType;
 
         if (action.InternalName != null)
@@ -28,6 +33,14 @@ internal static partial class ScriptActions
             }
         }
 
-        ExecuteImpl(context, action, actionType);
+        try
+        {
+            context.Scripting.ValidateAction(actionType);
+            ExecuteImpl(context, action, actionType);
+        }
+        catch (Exception exception) when (exception is not SimulationFeatureException)
+        {
+            throw new SimulationFeatureException(context.ScriptName, null, $"ScriptAction:{actionType}", exception);
+        }
     }
 }

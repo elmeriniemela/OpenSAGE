@@ -1,0 +1,20 @@
+name: Verification tools
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v6
+    - uses: actions/setup-python@v7
+      with:
+        python-version: '3.13'
+    - name: Test verification tooling
+      run: python -m unittest discover -s scripts/tests -v

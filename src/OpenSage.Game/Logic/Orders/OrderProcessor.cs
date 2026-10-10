@@ -13,6 +13,9 @@ public sealed class OrderProcessor
 {
     private readonly IGame _game;
 
+    internal bool StrictValidation { get; set; }
+    internal Order? CurrentOrder { get; set; }
+
     public OrderProcessor(IGame game)
     {
         _game = game;
@@ -24,6 +27,7 @@ public sealed class OrderProcessor
     {
         foreach (var order in orders)
         {
+            CurrentOrder = order;
             Player? player = null;
 
             if (order.PlayerIndex == -1)
@@ -255,6 +259,10 @@ public sealed class OrderProcessor
                     }
                     catch (Exception e)
                     {
+                        if (StrictValidation)
+                        {
+                            throw;
+                        }
                         Logger.Error(e, "Error while setting selection");
                     }
 
@@ -502,6 +510,10 @@ public sealed class OrderProcessor
                     break;
 
                 default:
+                    if (StrictValidation)
+                    {
+                        throw new NotSupportedException($"Unimplemented order type: {order.OrderType}");
+                    }
                     var args = string.Join(", ", order.Arguments.Select(argument => argument.ToString()));
 
                     Logger.Info($"Unimplemented order type: {order.OrderType} ({args})");

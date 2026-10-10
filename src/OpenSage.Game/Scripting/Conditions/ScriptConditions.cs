@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using OpenSage.Data.Ini;
+using OpenSage.Diagnostics;
 
 namespace OpenSage.Scripting;
 
@@ -17,6 +18,11 @@ internal static partial class ScriptConditions
 
     public static bool Evaluate(ScriptExecutionContext context, ScriptCondition condition)
     {
+        // A disabled condition contributes no restriction to its AND clause.
+        if (!condition.Enabled)
+        {
+            return true;
+        }
         var conditionType = condition.ContentType;
 
         if (condition.InternalName != null)
@@ -27,6 +33,15 @@ internal static partial class ScriptConditions
             }
         }
 
-        return EvaluateImpl(context, condition, conditionType);
+        try
+        {
+            context.Scripting.ValidateCondition(conditionType);
+            var result = EvaluateImpl(context, condition, conditionType);
+            return condition.IsInverted ? !result : result;
+        }
+        catch (Exception exception) when (exception is not SimulationFeatureException)
+        {
+            throw new SimulationFeatureException(context.ScriptName, null, $"ScriptCondition:{conditionType}", exception);
+        }
     }
 }

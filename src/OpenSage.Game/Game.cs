@@ -865,16 +865,8 @@ public sealed class Game : DisposableBase, IGame
 
     private void LogicTick()
     {
-        GameLogic.Update();
-
-        NetworkMessageBuffer?.Tick();
-
-        // TODO: What is the order?
-        // TODO: Calculate time correctly.
         var timeInterval = GetTimeInterval();
-        Scene3D?.LogicTick(timeInterval);
-
-        PartitionCellManager.Update();
+        SimulationTick.Execute(this, timeInterval);
     }
 
     private TimeInterval GetTimeInterval() => new(MapTime.TotalTime, TimeSpan.FromMilliseconds(GameEngine.MsPerLogicFrame));
