@@ -2,7 +2,9 @@
 
 ## Building the repository
 
-Opensage uses the standard .NET Core tooling. Install the tools and build normally (dotnet build).
+OpenSAGE uses the standard .NET tooling. Install a .NET 8 SDK version 8.0.400 or later and build normally (`dotnet build`). The SDK version is selected by `global.json`.
+
+The application targets .NET 8. The SDK includes the runtime needed to run local builds and tests. Self-contained published builds include their own runtime.
 
 ### Windows
 
@@ -14,6 +16,7 @@ On Unix systems you want to use the .NET Core CLI tools to compile OpenSage:
 
 ```shell
 cd src
+dotnet --version # must report 8.0.400 or a later 8.0 SDK
 dotnet build
 ```
 
@@ -21,16 +24,16 @@ You can also build like that on Windows, in case you don't want to use Visual St
 
 #### Linux dependencies
 
-- .NET 8.0+
+- .NET 8 SDK (8.0.400 or later)
 - `libc`
 - `libsdl2`
 - `libopenal`
 
-##### .NET 8.0+
+##### .NET SDK and runtime
 
-Linux distributions may have multiple forms of .NET Core installations, with the minimum version supported being 8.0.
+Install a .NET 8 SDK version 8.0.400 or later. The game project enables `LangVersion=preview` and uses C# 13 features such as `params ReadOnlySpan<T>`. Early .NET 8 SDK feature bands do not support this syntax, even with preview enabled. Installing only a newer runtime does not upgrade the compiler.
 
-If you wish to install .NET Core 8.0+ on your system, you can follow the instructions either for your distribution, for example:
+Follow the installation instructions for your distribution, for example:
 
 - [Ubuntu Package Instructions](https://learn.microsoft.com/en-us/dotnet/core/install/linux-ubuntu-install?tabs=dotnet8&pivots=os-linux-ubuntu-2404)
 - [Fedora Package Instructions](https://learn.microsoft.com/en-us/dotnet/core/install/linux-fedora?tabs=dotnet8)
@@ -38,6 +41,8 @@ If you wish to install .NET Core 8.0+ on your system, you can follow the instruc
 Or simply follow the universal Linux [installation script instructions](https://learn.microsoft.com/en-us/dotnet/core/install/linux-scripted-manual).
 
 Do look at the main, [official Linux installation guide by MicroSoft](https://learn.microsoft.com/en-us/dotnet/core/install/linux) to see how to install .NET Core on your system.
+
+If your distribution provides an older SDK feature band (for example, 8.0.1xx), install a compatible SDK using Microsoft's installation instructions above. `global.json` deliberately rejects older SDKs so that the requirement is reported before compilation.
 
 ##### `libc`
 
@@ -57,7 +62,7 @@ Some distros or package managers may install the file libdl.so.2 and not libdl.s
 -rw-r--r--  1 root root         8 Oct  7 01:13 libdl.a
 lrwxrwxrwx  1 root root        32 Nov  6 00:12 libdl.so -> /lib/x86_64-linux-gnu/libdl.so.2
 -rw-r--r--  1 root root     14480 Oct  7 01:13 libdl.so.2
-➜  ~ 
+➜  ~
 ```
 
 ##### `libsdl2`
