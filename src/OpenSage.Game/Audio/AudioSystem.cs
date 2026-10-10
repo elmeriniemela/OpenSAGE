@@ -207,9 +207,32 @@ public sealed class AudioSystem : GameSystem
 
     private void UpdateListener(Camera camera)
     {
+        if (!float.IsFinite(camera.Position.X) || !float.IsFinite(camera.Position.Y) || !float.IsFinite(camera.Position.Z))
+        {
+            return;
+        }
+
         _3dengine.SetListenerPosition(camera.Position);
-        var front = Vector3.Normalize(camera.Target - camera.Position);
-        _3dengine.SetListenerOrientation(camera.Up, front);
+
+        var direction = camera.Target - camera.Position;
+        var directionLengthSquared = direction.LengthSquared();
+        var upLengthSquared = camera.Up.LengthSquared();
+        if (!float.IsFinite(directionLengthSquared) || directionLengthSquared <= 0
+            || !float.IsFinite(upLengthSquared) || upLengthSquared <= 0)
+        {
+            // A camera that has not been positioned yet has no valid orientation.
+            return;
+        }
+
+        var front = direction / MathF.Sqrt(directionLengthSquared);
+        if (OperatingSystem.IsLinux())
+        {
+            OpenALListener.SetOrientation(camera.Up, front);
+        }
+        else
+        {
+            _3dengine.SetListenerOrientation(camera.Up, front);
+        }
     }
 
     public AudioSource PlayAudioEvent(GameObject emitter, BaseAudioEventInfo baseAudioEvent, bool looping = false)
