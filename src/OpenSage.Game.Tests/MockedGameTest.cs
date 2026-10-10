@@ -34,7 +34,7 @@ public abstract class MockedGameTest : IDisposable
     {
         public IGameDefinition Definition { get; }
         public SageGame SageGame { get; }
-        public Configuration Configuration { get; }
+        public Configuration Configuration { get; } = new();
         public string UserDataLeafName { get; }
         public string UserDataFolder { get; }
         public string UserAppDataFolder { get; }
@@ -48,7 +48,7 @@ public abstract class MockedGameTest : IDisposable
         public InputMessageBuffer InputMessageBuffer { get; }
         public SkirmishManager SkirmishManager { get; set; }
         public LobbyManager LobbyManager { get; }
-        public List<GameSystem> GameSystems { get; }
+        public List<GameSystem> GameSystems { get; } = new();
         public GraphicsSystem Graphics { get; }
         public ScriptingSystem Scripting { get; }
         public LuaScriptEngine Lua { get; set; }

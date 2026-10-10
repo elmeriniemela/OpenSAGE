@@ -37,18 +37,20 @@ public class SelectionMessageHandler : InputMessageHandler
                 break;
 
             case InputMessageType.MouseLeftButtonDown:
+                _mousePos = message.Value.MousePosition;
                 _system.OnStartDragSelection(_mousePos);
                 return InputMessageResult.Handled;
 
             case InputMessageType.MouseLeftButtonUp:
                 if (_system.Selecting)
                 {
+                    _system.OnDragSelection(message.Value.MousePosition);
                     _system.OnEndDragSelection();
                 }
                 break;
 
             case InputMessageType.MouseRightButtonDown:
-                _system.OnStartRightClickDrag(_mousePos);
+                _system.OnStartRightClickDrag(message.Value.MousePosition, gameTime);
                 break;
 
             case InputMessageType.MouseRightButtonUp:
@@ -56,7 +58,7 @@ public class SelectionMessageHandler : InputMessageHandler
                 {
                     // we need to pass in the position directly instead of relying on MouseMove as in my experience
                     // when moving quickly MouseMove wouldn't be called before MouseRightButtonUp
-                    _system.OnEndRightClickDrag(message.Value.MousePosition);
+                    _system.OnEndRightClickDrag(message.Value.MousePosition, gameTime);
                 }
                 break;
         }

@@ -97,6 +97,17 @@ The same identifiers do also work for Windows, in case you don't want to use the
 To run OpenSage you must run the OpenSage.Launcher project, which by default will start into C&C Generals. You can start a different game,
 by passing the `-g` option with an identfier for the game you want to start, e.g. `-g bfme` will start **Battle for Middleearth** (granted you have specified a valid installation location).
 
+### Generals mouse controls
+
+OpenSAGE reads `UseAlternateMouse` from `Options.ini` (or `options.ini` on Linux), checking the game's user data folder first, then the installation folder, then its parent folder for copied game bundles.
+
+- `UseAlternateMouse = no` (default): left-click selects or issues contextual commands; right-click cancels or deselects.
+- `UseAlternateMouse = yes`: left-click selects; right-click issues contextual move, attack, repair, and similar commands. Left-click empty terrain deselects.
+- In either mode, drag with the left button to box-select, or hold and drag with the right button to pan the camera. Building placement and targeted abilities use left-click; a right-click cancels the pending command without clearing the unit selection.
+- On the minimap, the command button moves selected local units and the other button moves the camera. With no local units selected, either button moves the camera.
+
+Restart the launcher after changing `UseAlternateMouse`. Click-versus-drag thresholds come from the original game's `Mouse.ini`.
+
 ### Developer Mode
 
 While inside the launcher application you can switch into a `developer mode`, by pressing **F11**. This mode gives you some useful insights on what's going on inside the engine and should help you for debugging purposes.

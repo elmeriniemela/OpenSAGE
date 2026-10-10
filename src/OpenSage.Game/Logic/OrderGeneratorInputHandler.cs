@@ -7,6 +7,7 @@ public class OrderGeneratorInputHandler : InputMessageHandler
 {
     private readonly OrderGeneratorSystem _orderGeneratorSystem;
 
+    private readonly MouseClickGesture _rightClick = new();
     private bool _isDragging;
     private Point2D _mousePosition;
     private Point2D _dragEndPosition;
@@ -23,6 +24,12 @@ public class OrderGeneratorInputHandler : InputMessageHandler
         _orderGeneratorSystem = orderGeneratorSystem;
     }
 
+    private void UpdateMousePosition(Point2D position)
+    {
+        _mousePosition = position;
+        _orderGeneratorSystem.UpdatePosition(position.ToVector2());
+    }
+
     public void Update()
     {
         _priority = HandlingPriority.OrderGeneratorPriority;
@@ -32,7 +39,6 @@ public class OrderGeneratorInputHandler : InputMessageHandler
 
     public override InputMessageResult HandleMessage(InputMessage message, in TimeInterval gameTime)
     {
-        // TODO: Implement both mouse modes
         switch (message.MessageType)
         {
             case InputMessageType.MouseMove:
@@ -48,6 +54,12 @@ public class OrderGeneratorInputHandler : InputMessageHandler
                 break;
 
             case InputMessageType.MouseLeftButtonDown:
+                UpdateMousePosition(message.Value.MousePosition);
+                if (_orderGeneratorSystem.IsContextual)
+                {
+                    // Selection handles contextual left clicks after deciding whether this is a box drag.
+                    break;
+                }
                 if (!_orderGeneratorSystem.ActiveGenerator.CanDrag)
                 {
                     if (_orderGeneratorSystem.TryActivate(_keyModifiers))
@@ -62,6 +74,7 @@ public class OrderGeneratorInputHandler : InputMessageHandler
                 return InputMessageResult.Handled;
 
             case InputMessageType.MouseLeftButtonUp:
+                UpdateMousePosition(message.Value.MousePosition);
                 if (_isDragging)
                 {
                     _orderGeneratorSystem.TryActivate(_keyModifiers);
@@ -71,8 +84,28 @@ public class OrderGeneratorInputHandler : InputMessageHandler
                 break;
 
             case InputMessageType.MouseRightButtonDown:
-                // TODO: is this desirable if we don't actually deselect the unit, but simply pan the camera?
-                _orderGeneratorSystem.CancelOrderGenerator();
+                UpdateMousePosition(message.Value.MousePosition);
+                _orderGeneratorSystem.RightClickHandled = false;
+                _rightClick.Begin(_mousePosition, gameTime.TotalTime, _orderGeneratorSystem.CameraPosition);
+                break;
+
+            case InputMessageType.MouseRightButtonUp:
+                UpdateMousePosition(message.Value.MousePosition);
+                if (_rightClick.End(_mousePosition, gameTime.TotalTime,
+                    _orderGeneratorSystem.CameraPosition, _orderGeneratorSystem.MouseData))
+                {
+                    if (!_orderGeneratorSystem.IsContextual)
+                    {
+                        _orderGeneratorSystem.CancelOrderGenerator();
+                        _isDragging = false;
+                        _orderGeneratorSystem.RightClickHandled = true;
+                    }
+                    else if (_orderGeneratorSystem.UseAlternateMouse)
+                    {
+                        _orderGeneratorSystem.TryActivate(_keyModifiers, allowSelection: false);
+                    }
+                }
+                // Selection and the camera must receive button-up to finish panning.
                 break;
 
             case InputMessageType.KeyDown:
@@ -80,6 +113,7 @@ public class OrderGeneratorInputHandler : InputMessageHandler
                     message.Value.Key == Veldrid.Key.ControlRight)
                 {
                     _keyModifiers |= KeyModifiers.Ctrl;
+                    _orderGeneratorSystem.InputKeyModifiers = _keyModifiers;
                     return InputMessageResult.Handled;
                 }
                 break;
@@ -89,6 +123,7 @@ public class OrderGeneratorInputHandler : InputMessageHandler
                     message.Value.Key == Veldrid.Key.ControlRight)
                 {
                     _keyModifiers &= ~KeyModifiers.Ctrl;
+                    _orderGeneratorSystem.InputKeyModifiers = _keyModifiers;
                     return InputMessageResult.Handled;
                 }
                 break;

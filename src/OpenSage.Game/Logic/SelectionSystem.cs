@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using OpenSage.Gui;
+using OpenSage.Input;
 using OpenSage.Logic.Object;
 using OpenSage.Logic.OrderGenerators;
 using OpenSage.Logic.Orders;
@@ -19,26 +20,12 @@ public sealed class SelectionSystem : GameSystem
         MultiSelecting
     }
 
-    // TODO: Find out if there's an INI setting for this.
-    // If not, add this to our custom settings when we have those.
-    // This should probably scale with resolution.
-    private const int BoxSelectionMinimumSize = 30;
-
-    // TODO: consider allowing configuration for accessibility
-    // time after which releasing right click will not result in deselecting units, in ms
-    private const int DeselectMaxTimeMs = 250;
-
-    // TODO: scale with resolution, allow configuration for accessibility
-    // if the cursor moves further than this, don't deselect no matter how short right click was held for
-    private const int DeselectMaxDelta = 5;
-
     private SelectionGui SelectionGui => Game.Scene3D.SelectionGui;
 
     private Point2D _selectionStartPoint;
     private Point2D _selectionEndPoint;
 
-    private Point2D _panStartPoint;
-    private TimeSpan _panStartTime;
+    private readonly MouseClickGesture _rightClick = new();
 
     public SelectionStatus Status { get; private set; } = SelectionStatus.NotSelecting;
     public bool Selecting => Status != SelectionStatus.NotSelecting;
@@ -58,19 +45,17 @@ public sealed class SelectionSystem : GameSystem
 
     public SelectionSystem(IGame game) : base(game) { }
 
-    public void OnStartRightClickDrag(Point2D point)
+    public void OnStartRightClickDrag(Point2D point, in TimeInterval gameTime)
     {
         Panning = true;
-        _panStartPoint = point;
-        _panStartTime = Game.MapTime.TotalTime;
+        _rightClick.Begin(point, gameTime.TotalTime, Game.Scene3D.TacticalView.Position);
     }
 
-    public void OnEndRightClickDrag(Point2D point2D)
+    public void OnEndRightClickDrag(Point2D point2D, in TimeInterval gameTime)
     {
-        var selectionDelta = point2D - _panStartPoint;
-        var time = Game.MapTime.TotalTime - _panStartTime;
-        if (time.Milliseconds < DeselectMaxTimeMs &&
-            Math.Abs(selectionDelta.X) < DeselectMaxDelta && Math.Abs(selectionDelta.Y) < DeselectMaxDelta)
+        var isClick = _rightClick.End(point2D, gameTime.TotalTime,
+            Game.Scene3D.TacticalView.Position, Game.AssetStore.MouseData.Current);
+        if (isClick && !Game.Configuration.UseAlternateMouse && !Game.OrderGenerator.RightClickHandled)
         {
             ClearSelectedObjectsForLocalPlayer();
         }
@@ -103,7 +88,7 @@ public sealed class SelectionSystem : GameSystem
 
         var rect = SelectionRect;
 
-        // If either dimension is under 50 pixels, don't show the box selector.
+        // Use the drag threshold from the original Mouse.ini.
         if (Status != SelectionStatus.MultiSelecting && UseBoxSelection(rect))
         {
             Status = SelectionStatus.MultiSelecting;
@@ -120,7 +105,11 @@ public sealed class SelectionSystem : GameSystem
     {
         if (Status == SelectionStatus.SingleSelecting)
         {
-            SingleSelect();
+            if (Game.Configuration.UseAlternateMouse ||
+                !Game.OrderGenerator.TryActivate(Game.OrderGenerator.InputKeyModifiers))
+            {
+                SingleSelect();
+            }
         }
         else
         {
@@ -139,7 +128,7 @@ public sealed class SelectionSystem : GameSystem
         {
             if (CanSetRallyPoint(objects))
             {
-                Game.OrderGenerator.ActiveGenerator = new RallyPointOrderGenerator(Game, objects.Single());
+                Game.OrderGenerator.ActiveGenerator = new RallyPointOrderGenerator(Game, objects.Single(), isContextual: true);
             }
             else
             {
@@ -183,6 +172,10 @@ public sealed class SelectionSystem : GameSystem
     public void ClearSelectedObjects(Player player)
     {
         player.DeselectUnits();
+        if (player == Game.Scene3D.LocalPlayer)
+        {
+            Game.OrderGenerator.CancelOrderGenerator();
+        }
     }
 
     internal GameObject FindClosestObject(Vector2 point)
@@ -274,9 +267,9 @@ public sealed class SelectionSystem : GameSystem
     }
 
 
-    private static bool UseBoxSelection(Rectangle rect)
+    private bool UseBoxSelection(Rectangle rect)
     {
-        return Math.Max(rect.Width, rect.Height) >= BoxSelectionMinimumSize;
+        return Math.Max(rect.Width, rect.Height) > Game.AssetStore.MouseData.Current.DragTolerance;
     }
 
     // Based on

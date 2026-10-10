@@ -61,26 +61,20 @@ public static class ControlBarCallbacks
             message.MousePosition,
             control.ClientRectangle);
 
-        // TODO: Fix left/right mouse handling
-        // - If user has selected units, left mouse should move them and right mouse moves the camera
-        // - If user has not selected units, both mouse buttons move the camera
-        switch (message.MessageType)
+        var player = context.Game.Scene3D.LocalPlayer;
+        var unit = player?.SelectedUnits.LastOrDefault(unit => unit.Owner == player);
+        var commandButton = context.Game.Configuration.UseAlternateMouse
+            ? WndWindowMessageType.MouseRightDown
+            : WndWindowMessageType.MouseDown;
+        if (unit == null || message.MessageType != commandButton)
         {
-            case WndWindowMessageType.MouseDown: // Left mouse moves selected units
-                var unit = context.Game.Scene3D.LocalPlayer.SelectedUnits.LastOrDefault();
-                if (unit != null)
-                {
-                    // TODO: Duplicated in OrderGeneratorSystem
-                    unit.OnLocalMove(context.Game.Audio);
-                    var order = Order.CreateMoveOrder(context.Game.Scene3D.GetPlayerIndex(context.Game.Scene3D.LocalPlayer), terrainPosition);
-                    context.Game.NetworkMessageBuffer.AddLocalOrder(order);
-                }
-                break;
-
-            case WndWindowMessageType.MouseRightDown: // Right mouse moves camera.
-                context.Game.Scene3D.TacticalView.LookAt(terrainPosition);
-                break;
+            context.Game.Scene3D.TacticalView.LookAt(terrainPosition);
+            return;
         }
+
+        unit.OnLocalMove(context.Game.Audio);
+        var order = Order.CreateMoveOrder(context.Game.Scene3D.GetPlayerIndex(player), terrainPosition);
+        context.Game.NetworkMessageBuffer.AddLocalOrder(order);
     }
 
     public static void W3DLeftHUDDraw(Control control, DrawingContext2D drawingContext)

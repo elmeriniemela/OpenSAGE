@@ -175,6 +175,7 @@ public sealed class LookAtTranslator(TacticalView tacticalView, CursorManager cu
                 {
                     _lastMouseMoveTime = gameTime.TotalTime.TotalMilliseconds;
                     _anchor = message.Value.MousePosition;
+                    _currentPos = _anchor;
 
                     // TODO(Port): Also check TheInGameUI->isSelecting()
                     if (!IsScrolling)
@@ -353,23 +354,8 @@ public sealed class LookAtTranslator(TacticalView tacticalView, CursorManager cu
             {
                 case ScrollType.RightMouseButton:
                     {
-                        // TODO(Port): TheInGameUI->shouldMoveRMBScrollAnchor()
-                        var shouldMoveRMBScrollAnchor = true;
-
-                        if (shouldMoveRMBScrollAnchor)
-                        {
-                            var max = _tacticalView.Camera.ScreenSize / 2.0f;
-                            _anchor = new Point2D(
-                                (int)Math.Clamp(_anchor.X, max.X, _tacticalView.Camera.ScreenSize.X - max.X),
-                                (int)Math.Clamp(_anchor.Y, max.Y, _tacticalView.Camera.ScreenSize.Y - max.Y)
-                            );
-                        }
-
-                        offset = (_currentPos.ToVector2() - _anchor.ToVector2()) * speedFactor;
-                        var vec = Vector2.Normalize(offset);
-
-                        // It's interesting that right mouse scrolling also uses the keyboard speed factor
-                        offset += speedFactor * vec * MathF.Pow(keyboardScrollSpeedFactor, 2.0f);
+                        offset = CalculateRightMouseScroll(_currentPos, ref _anchor,
+                            _tacticalView.Camera.ScreenSize, speedFactor, keyboardScrollSpeedFactor);
                         break;
                     }
                 case ScrollType.Key:
@@ -432,6 +418,22 @@ public sealed class LookAtTranslator(TacticalView tacticalView, CursorManager cu
         }
 
         // TODO(Port): Replay stuff
+    }
+
+    internal static Vector2 CalculateRightMouseScroll(Point2D current, ref Point2D anchor,
+        Vector2 screenSize, Vector2 speedFactor, float keyboardScrollSpeedFactor)
+    {
+        // Limit how far the anchor can trail the pointer, rather than centering it on screen.
+        var halfScreen = screenSize / 2;
+        anchor = new Point2D(
+            (int)Math.Clamp(anchor.X, current.X - halfScreen.X, current.X + halfScreen.X),
+            (int)Math.Clamp(anchor.Y, current.Y - halfScreen.Y, current.Y + halfScreen.Y));
+        var offset = (current.ToVector2() - anchor.ToVector2()) * speedFactor;
+        if (offset != Vector2.Zero)
+        {
+            offset += speedFactor * Vector2.Normalize(offset) * MathF.Pow(keyboardScrollSpeedFactor, 2);
+        }
+        return offset;
     }
 
     private struct ScrollDirState

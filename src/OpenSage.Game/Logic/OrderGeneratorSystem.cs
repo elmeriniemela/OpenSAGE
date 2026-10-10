@@ -6,12 +6,21 @@ using OpenSage.Graphics.Rendering;
 using OpenSage.Input;
 using OpenSage.Logic.Object;
 using OpenSage.Logic.OrderGenerators;
+using OpenSage.Logic.Orders;
 
 namespace OpenSage.Logic;
 
 public class OrderGeneratorSystem : GameSystem
 {
     private IOrderGenerator _activeGenerator;
+
+    internal KeyModifiers InputKeyModifiers { get; set; }
+    internal bool RightClickHandled { get; set; }
+    internal bool UseAlternateMouse => Game.Configuration.UseAlternateMouse;
+    internal bool IsContextual => ActiveGenerator is UnitOrderGenerator ||
+        ActiveGenerator is RallyPointOrderGenerator { IsContextual: true };
+    internal MouseData MouseData => Game.AssetStore.MouseData.Current;
+    internal Vector3 CameraPosition => Game.Scene3D.TacticalView.Position;
 
     public IOrderGenerator ActiveGenerator
     {
@@ -58,19 +67,26 @@ public class OrderGeneratorSystem : GameSystem
         }
     }
 
-    public bool TryActivate(KeyModifiers keyModifiers)
+    public bool TryActivate(KeyModifiers keyModifiers, bool allowSelection = true)
     {
         if (!_worldPosition.HasValue)
         {
             return false;
         }
 
+        // Cursor evaluation determines the contextual order. Refresh it at the click position.
+        ActiveGenerator.GetCursor(keyModifiers);
         var result = ActiveGenerator.TryActivate(Game.Scene3D, keyModifiers);
 
         switch (result)
         {
             case OrderGeneratorResult.Success success:
                 {
+                    if (!allowSelection && success.Orders.Any(order => order.OrderType == OrderType.SetSelection))
+                    {
+                        return false;
+                    }
+
                     foreach (var order in success.Orders)
                     {
                         Game.NetworkMessageBuffer.AddLocalOrder(order);

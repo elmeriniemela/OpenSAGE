@@ -480,6 +480,11 @@ public sealed class Game : DisposableBase, IGame
                 GraphicsDevice,
                 SageGame));
 
+            if (SageGame is SageGame.CncGenerals or SageGame.CncGeneralsZeroHour)
+            {
+                Configuration.LoadMouseOptions(installation.Path, UserDataFolder);
+            }
+
             // Create file system for user data folder and load user maps.
             // This has to be done after the ContentManager is initialized and
             // the GameData.ini file has been parsed because we don't know

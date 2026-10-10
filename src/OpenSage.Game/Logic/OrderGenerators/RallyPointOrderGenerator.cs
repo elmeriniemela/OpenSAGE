@@ -18,15 +18,18 @@ public sealed class RallyPointOrderGenerator : OrderGenerator, IDisposable
 {
     public override bool CanDrag => true;
 
+    internal bool IsContextual { get; }
+
     private readonly GameObject _gameObject;
     private readonly Drawable _rallyPointMarker;
 
     private OrderType _currentOrder = OrderType.Zero;
 
-    public RallyPointOrderGenerator(IGame game, GameObject gameObject)
+    public RallyPointOrderGenerator(IGame game, GameObject gameObject, bool isContextual = false)
         : base(game)
     {
         _gameObject = gameObject;
+        IsContextual = isContextual;
 
         var rpMarkerDef = Game.AssetStore.ObjectDefinitions.GetByName("RallyPointMarker");
         _rallyPointMarker = Game.GameClient.CreateDrawable(rpMarkerDef, null);
