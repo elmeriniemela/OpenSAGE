@@ -33,18 +33,16 @@ public sealed class CompositeFileSystem : FileSystem
         string searchPattern = "*",
         SearchOption searchOption = SearchOption.TopDirectoryOnly)
     {
-        var paths = new HashSet<string>();
+        var paths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var fileSystem in _fileSystems)
         {
             foreach (var fileSystemEntry in fileSystem.GetFilesInDirectory(directoryPath, searchPattern, searchOption))
             {
-                if (paths.Contains(fileSystemEntry.FilePath))
+                if (!paths.Add(NormalizeFilePath(fileSystemEntry.FilePath)))
                 {
                     continue;
                 }
-
-                paths.Add(fileSystemEntry.FilePath);
 
                 yield return fileSystemEntry;
             }

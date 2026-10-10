@@ -118,7 +118,7 @@ internal static class SkudefReader
             // In the CD / Origin release of ZH, .big files from Generals were included in the same directory as the other .big files.
             // In the current Steam version, they are in a subdirectory. We need to make sure that the Generals .big files are loaded first,
             // so that Zero Hour can override them.
-            .OrderByDescending(entry => entry.Contains("ZH_Generals"))
+            .OrderByDescending(entry => entry.Contains("ZH_Generals", StringComparison.OrdinalIgnoreCase))
             .ThenBy(entry =>
             {
                 var fileName = Path.GetFileNameWithoutExtension(entry);
@@ -159,7 +159,7 @@ internal static class SkudefReader
                     yield return bigFile;
                 }
             }
-            else if (Path.GetExtension(entry) == ".big")
+            else if (string.Equals(Path.GetExtension(entry), ".big", StringComparison.OrdinalIgnoreCase))
             {
                 yield return entry;
             }

@@ -51,7 +51,7 @@ public sealed class GameInstallation
         {
             result = new CompositeFileSystem(
                 result,
-                new BigFileSystem(_baseGameInstallation.Path));
+                _baseGameInstallation.CreateFileSystem());
         }
 
         return result;

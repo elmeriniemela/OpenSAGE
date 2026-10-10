@@ -133,19 +133,21 @@ public sealed class PolygonTrigger : IPersistableObject
 
         var numPoints = reader.ReadUInt32();
 
+        // Even ignored triggers occupy space in the file. Consume their points
+        // before returning so the next trigger or map asset stays aligned.
+        result.Points = new Point3D[numPoints];
+
+        for (var i = 0; i < numPoints; i++)
+        {
+            result.Points[i] = reader.ReadPoint3D();
+        }
+
         // ZH Compatibility: Original ZH code logs a warning if there are fewer than 2 points, but that's not a valid polygon.
         // Likely an off-by-one error.
         if (numPoints < 3)
         {
             Logger.Warn($"Polygon trigger '{result.Name}' has less than 3 points, ignoring.");
             return null;
-        }
-
-        result.Points = new Point3D[numPoints];
-
-        for (var i = 0; i < numPoints; i++)
-        {
-            result.Points[i] = reader.ReadPoint3D();
         }
 
         return result;

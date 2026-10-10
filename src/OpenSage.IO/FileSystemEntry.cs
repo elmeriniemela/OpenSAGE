@@ -7,13 +7,15 @@ public sealed class FileSystemEntry
     public FileSystem FileSystem { get; }
     public string FilePath { get; }
     public uint Length { get; }
+    public string? SourcePath { get; }
 
-    public FileSystemEntry(FileSystem fileSystem, string filePath, uint length, Func<Stream> open)
+    public FileSystemEntry(FileSystem fileSystem, string filePath, uint length, Func<Stream> open, string? sourcePath = null)
     {
         FileSystem = fileSystem;
         FilePath = filePath;
         Length = length;
         _open = open;
+        SourcePath = sourcePath;
     }
 
     public Stream Open() => _open();

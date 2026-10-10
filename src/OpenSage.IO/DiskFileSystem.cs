@@ -14,7 +14,7 @@ public sealed class DiskFileSystem : FileSystem
         string searchPattern = "*",
         SearchOption searchOption = SearchOption.TopDirectoryOnly)
     {
-        var childDirectory = Path.Combine(RootDirectory, NormalizeFilePath(directoryPath));
+        var childDirectory = ResolvePath(directoryPath);
 
         var childDirectoryInfo = new DirectoryInfo(childDirectory);
         if (!childDirectoryInfo.Exists)
@@ -36,7 +36,7 @@ public sealed class DiskFileSystem : FileSystem
 
     public override FileSystemEntry? GetFile(string filePath)
     {
-        var fullFilePath = Path.Combine(RootDirectory, NormalizeFilePath(filePath));
+        var fullFilePath = ResolvePath(filePath);
         var fileInfo = new FileInfo(fullFilePath);
         if (!fileInfo.Exists)
         {
@@ -58,7 +58,42 @@ public sealed class DiskFileSystem : FileSystem
             this,
             relativePath,
             (uint)fileInfo.Length,
-            () => File.OpenRead(fullPath));
+            () => File.OpenRead(fullPath),
+            fullPath);
+    }
+
+    // SAGE asset paths are case-insensitive, including directory names on Linux.
+    // Keep the common exact-case lookup fast and resolve components only on a miss.
+    private string ResolvePath(string path)
+    {
+        var fullPath = Path.GetFullPath(Path.Combine(RootDirectory, NormalizeFilePath(path)));
+        if (File.Exists(fullPath) || Directory.Exists(fullPath))
+        {
+            return fullPath;
+        }
+
+        var root = Path.GetPathRoot(fullPath)!;
+        var current = root;
+        foreach (var component in fullPath[root.Length..].Split(Path.DirectorySeparatorChar))
+        {
+            if (!Directory.Exists(current))
+            {
+                return fullPath;
+            }
+
+            var match = Directory.EnumerateFileSystemEntries(current)
+                .Where(entry => string.Equals(Path.GetFileName(entry), component, StringComparison.OrdinalIgnoreCase))
+                .OrderBy(entry => entry, StringComparer.Ordinal)
+                .FirstOrDefault();
+            if (match == null)
+            {
+                return fullPath;
+            }
+
+            current = match;
+        }
+
+        return current;
     }
 
     public string GetFullPath(FileSystemEntry entry)

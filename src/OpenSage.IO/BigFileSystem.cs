@@ -113,7 +113,8 @@ public sealed class BigFileSystem : FileSystem
             this,
             NormalizeFilePath(entry.FullName),
             entry.Length,
-            entry.Open);
+            entry.Open,
+            entry.Archive.FilePath);
     }
 
     private sealed class BigDirectory
