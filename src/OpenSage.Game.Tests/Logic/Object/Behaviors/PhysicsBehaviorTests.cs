@@ -1,4 +1,5 @@
 ﻿using System.Numerics;
+using OpenSage.Client;
 using OpenSage.Logic.Object;
 using OpenSage.Tests.Logic.Object.Update;
 using Xunit;
@@ -156,6 +157,24 @@ public class PhysicsBehaviorTests : UpdateModuleTest<PhysicsBehavior, PhysicsBeh
         Assert.Equal(Vector3.Zero, behavior.CurrentAcceleration);
         Assert.Equal(new Vector3(1, 2, 3), behavior.Velocity);
         Assert.Equal(new Vector3(1, 2, 3), gameObject.Translation);
+    }
+
+    [Fact]
+    public void LandingWithoutBounceSoundDoesNotThrow()
+    {
+        var behavior = SampleModule(out var gameObject);
+        // The mocked engine has no GameClient to attach a drawable during construction.
+        using var drawable = new Drawable(gameObject.Definition, ZeroHour.GameEngine, gameObject);
+        typeof(GameObject).GetField(nameof(GameObject.Drawable)).SetValue(gameObject, drawable);
+        gameObject.SetTranslation(Vector3.UnitZ);
+        Assert.True(gameObject.IsAboveTerrain);
+
+        behavior.StickToGround = true;
+        behavior.Update();
+
+        Assert.False(gameObject.IsAboveTerrain);
+        Assert.False(behavior.Flags.HasFlag(PhysicsFlagType.WasAirborneLastFrame));
+        Assert.False(behavior.Flags.HasFlag(PhysicsFlagType.IsInUpdate));
     }
 
     private PhysicsBehavior SampleModule(PhysicsBehaviorModuleData moduleData = null)

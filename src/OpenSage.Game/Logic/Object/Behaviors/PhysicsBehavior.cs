@@ -29,8 +29,7 @@ public class PhysicsBehavior : UpdateModule, ICollideModule
     private readonly float _lateralFriction;
     private readonly float _zFriction;
 
-    // TODO(Port): Implement this.
-    //private readonly AudioEvent _bounceSound;
+    private AudioEvent _bounceSound;
 
     private IProjectileUpdate _projectileUpdate;
 
@@ -851,8 +850,7 @@ public class PhysicsBehavior : UpdateModule, ICollideModule
 
     public void SetBounceSound(AudioEvent bounceSound)
     {
-        // TODO(Port): Implement this.
-        throw new NotImplementedException();
+        _bounceSound = bounceSound;
     }
 
     public void SetAngles(float yaw, float pitch, float roll)
@@ -869,14 +867,12 @@ public class PhysicsBehavior : UpdateModule, ICollideModule
 
     private void DoBounceSound(in Vector3 prevPos)
     {
-        // TODO(Port): Implement this.
-        //if (_bounceSound == null)
-        //{
-        //    return;
-        //}
+        if (_bounceSound == null)
+        {
+            return;
+        }
 
-        // TODO(Port): Implement this.
-        throw new NotImplementedException();
+        GameEngine.AudioSystem.PlayAudioEvent(prevPos, _bounceSound);
     }
 
     private UpdateSleepTime CalculateSleepTime()

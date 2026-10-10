@@ -262,7 +262,9 @@ internal sealed class GameLogic : DisposableBase, IGameObjectCollection, IPersis
 
             // Defer it till the next frame and re-push it.
             updateModule.NextCallFrame = now + sleepLength.FrameSpan;
-            _sleepyUpdates.Rebalance(0);
+            // Creating or awakening another module during Update can move this
+            // module away from the root of the queue.
+            _sleepyUpdates.Rebalance(updateModule.IndexInLogic);
         }
 
         _sleepyUpdates.Validate();
