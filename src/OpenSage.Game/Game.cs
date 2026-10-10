@@ -791,6 +791,11 @@ public sealed class Game : DisposableBase, IGame
         // Update timers, input and UI state
         LocalLogicTick(messages);
 
+        if (Scene3D == null)
+        {
+            return;
+        }
+
         var totalGameTime = MapTime.TotalTime;
 
         // If the game is not paused and it's time to do a logic update, do so.
@@ -836,13 +841,16 @@ public sealed class Game : DisposableBase, IGame
             MapTime = _mapTimer.CurrentGameTime;
         }
 
-        // How close are we to the next logic frame?
-        var tickT = (float)(1.0 - TimeSpanUtility.Max(_nextLogicUpdate - MapTime.TotalTime, TimeSpan.Zero)
-                                 .TotalMilliseconds / LogicUpdateInterval);
-
         // We pass RenderTime to Scene2D so that the UI remains responsive even when the game is paused.
         Scene2D.LocalLogicTick(RenderTime, Scene3D?.LocalPlayer);
-        Scene3D?.LocalLogicTick(MapTime, tickT);
+
+        if (Scene3D != null)
+        {
+            // How close are we to the next logic frame?
+            var tickT = (float)(1.0 - TimeSpanUtility.Max(_nextLogicUpdate - MapTime.TotalTime, TimeSpan.Zero)
+                                     .TotalMilliseconds / LogicUpdateInterval);
+            Scene3D.LocalLogicTick(MapTime, tickT);
+        }
 
         Audio.Update(Scene3D?.Camera);
         Cursors.Update(RenderTime);

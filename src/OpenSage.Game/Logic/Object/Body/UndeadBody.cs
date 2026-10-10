@@ -44,7 +44,7 @@ public sealed class UndeadBody : ActiveBody
             shouldStartSecondLife = true;
         }
 
-        var damageOutput = AttemptDamage(modifiedDamageInput);
+        var damageOutput = base.AttemptDamage(modifiedDamageInput);
 
         // After we take it (which allows for damaging special effects),
         // we will do our modifications to the body module.

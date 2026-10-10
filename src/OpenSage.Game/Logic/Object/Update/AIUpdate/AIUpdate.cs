@@ -15,7 +15,14 @@ public class AIUpdate : UpdateModule
 
     private AIUpdateStateMachine _stateMachine;
 
-    private protected AIUpdateStateMachine StateMachine => _stateMachine ??= CreateStateMachine();
+    private protected AIUpdateStateMachine StateMachine => _stateMachine ??= CreateInitializedStateMachine();
+
+    private AIUpdateStateMachine CreateInitializedStateMachine()
+    {
+        var result = CreateStateMachine();
+        result.InitializeDefaultState();
+        return result;
+    }
 
     private readonly LocomotorSet _locomotorSet;
     private LocomotorSetType _currentLocomotorSetType;
@@ -143,9 +150,7 @@ public class AIUpdate : UpdateModule
 
     private protected virtual AIUpdateStateMachine CreateStateMachine()
     {
-        var result = new AIUpdateStateMachine(GameObject, GameEngine, this);
-        result.InitializeDefaultState();
-        return result;
+        return new AIUpdateStateMachine(GameObject, GameEngine, this);
     }
 
     internal void SetLocomotor(LocomotorSetType type)
