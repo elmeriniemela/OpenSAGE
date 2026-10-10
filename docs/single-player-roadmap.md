@@ -205,3 +205,52 @@ rescan was needed: this increment changes runtime execution, not asset resolutio
 Reproduce with the focused scenario command in the linked guide and
 `./scripts/verify.sh full --configuration Release`. Windows behavior comparison,
 official-map headless runs and milestone completion remain unverified.
+
+## Handoff: next implementation steps
+
+Continue in dependency order. Keep the full PLAN.md completion gates; the checklist
+below records the next work rather than replacing those gates.
+
+1. **Create a production headless session.** Separate `Scene3D` simulation services
+   from its GPU terrain, render buckets, particle systems, tactical view and input
+   handlers. Add injectable audio/video services and a drawable path that preserves
+   simulation-required model state. Use the same player, object, navigation,
+   scheduler, scripting and order implementations as normal gameplay. Fail with a
+   named feature when required simulation data still depends on presentation.
+2. **Load a real map in that session.** Add an asset-backed scenario command that
+   accepts game installation, map/campaign route, difficulty, seed, tick bound,
+   orders and assertions. Load the resolved map, players, teams, objects, scripts,
+   terrain logic, navigation, partition and campaign state using normal precedence.
+   Keep assets read-only. Emit the scenario JSON report and identify map, player,
+   script/group, object and feature for every failure.
+3. **Turn the inventory into executable coverage.** Add object module and player
+   order indexes, GUI callbacks, cinematic dependencies and audio resolution. Use
+   each content edge to create bounded loading/scenario checks; make missing,
+   empty, unsupported and unverified behavior distinct. Do not count a registered
+   handler or a successful load as implemented behavior.
+4. **Finish lifecycle and controls (milestone 2).** Repeatedly start, pause, resume,
+   restart, surrender, load and return to menu. Verify cleanup, mouse modes,
+   selection/groups, contextual commands, minimap/camera, settings and existing
+   scheduler/AI/physics/audio crash regressions. Pass 20 transitions without stale
+   state or increasing live resources.
+5. **Build scenario coverage by gameplay dependency (milestones 3–5).** Add
+   deterministic economy, production, movement, combat, vision, faction mechanics,
+   scripting, objectives, campaign transitions, skirmish AI and Challenge tests.
+   Start with training and the first USA mission, then expand through definition
+   routes and every difficulty, faction and official map. Record Windows reference
+   behavior for each accepted subsystem.
+6. **Add snapshots and presentation (milestone 6).** Serialize simulation clocks,
+   RNG, stable object references, AI, queues, scripts, visibility and campaign
+   state into versioned `.osav` profiles; test uninterrupted versus reload hashes.
+   Then complete atomic save/profile UI, video/audio synchronization and required
+   GUI feedback.
+7. **Run the release gates.** Perform asset-backed route/dependency scans, every
+   campaign/Challenge playthrough on every difficulty, skirmish map/faction runs,
+   save/reload comparisons, two-hour matches and 20 session transitions. Run the
+   full asset suite on the private installation host. Missing assets or known movie
+   references stay reported as failures/skips, never as a full pass.
+
+Immediate starting point: inspect `Scene3D` construction and `Terrain`/`Drawable`
+resource creation, then extract the CPU map/session services while retaining the
+existing `SimulationTick` entry point. The current synthetic scene is test-only;
+there is no asset-backed headless session yet.
